@@ -113,6 +113,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Changelog
 
+### Version 1.2.0
+- Locale-independent detection: works on non-English Google Drive UIs (e.g. Japanese `「foo.md」を表示しています`) by extracting the file name from the aria-label instead of matching the English word "Displaying"
+- Event-driven detection via MutationObserver (no more polling / fixed timeouts)
+- Structural content lookup (largest `<pre>` in the document element) instead of obfuscated class names
+- HTML output sanitized with DOMPurify
+- Content script now runs in all frames (`all_frames: true`)
+- Popup theme setting now actually applies (dark theme via `.gdmd-dark` class)
+
 ### Version 1.1.0
 - Production-ready release
 - Optimized performance and polling mechanism
