@@ -1,119 +1,93 @@
 # Google Drive Markdown Preview
 
-A Chrome extension that automatically detects and renders markdown files in Google Drive's preview mode, replacing raw markdown text with beautifully formatted HTML.
+A Chrome extension that renders markdown files in Google Drive's preview mode, replacing the raw text with GitHub-style formatted HTML.
+
+[日本語版 README はこちら](README.ja.md)
 
 ## Features
 
-- **Automatic Detection**: Detects `.md` files when previewed in Google Drive
-- **Seamless Rendering**: Converts markdown to properly formatted HTML in-place
-- **Toggle View**: Switch between rendered markdown and raw text with a single click
-- **GitHub-style Styling**: Clean, readable formatting with syntax highlighting support
-- **Dark Theme Support**: Automatically adapts to system dark mode preferences
-- **Multi-file Support**: Handle multiple markdown files in the same session
-- **No External Dependencies**: All processing happens locally in your browser
+- **Automatic detection**: renders `.md` / `.markdown` files as soon as they are opened in the Drive preview
+- **Toggle view**: a "Show Raw" button switches between the rendered HTML and the original text
+- **GitHub-style styling**: clean, readable formatting with an optional dark theme (selected in the popup)
+- **Navigation aware**: re-renders when you move between files inside the preview (keyboard navigation)
+- **Local processing only**: parsing and sanitizing happen entirely in your browser; the extension makes no network requests
 
 ## Installation
 
-### From Chrome Web Store (Recommended)
-*Coming soon - extension will be published to Chrome Web Store*
+This extension is not published to the Chrome Web Store. Install it manually:
 
-### Manual Installation (Developer Mode)
 1. Download or clone this repository
-2. Open Chrome and go to `chrome://extensions/`
-3. Enable "Developer mode" in the top right
-4. Click "Load unpacked" and select the extension directory
-5. The extension will be installed and ready to use
+2. Open `chrome://extensions/` (or your Chromium browser's equivalent)
+3. Enable "Developer mode"
+4. Click "Load unpacked" and select the repository directory
+
+Note: extensions with the same name exist on the Chrome Web Store, but they are unrelated to this repository. If one of them is installed, disable it to avoid double rendering.
 
 ## Usage
 
-1. **Open Google Drive** in your Chrome browser
-2. **Double-click any `.md` file** to open it in preview mode
-3. **Watch the magic happen** - the extension automatically detects and renders the markdown
-4. **Use the toggle button** (top-right of rendered content) to switch between formatted and raw views
-5. **Adjust settings** by clicking the extension icon in your browser toolbar
+1. Open Google Drive
+2. Double-click a `.md` file to open it in preview mode
+3. The raw text is replaced with rendered HTML automatically
+4. Use the "Show Raw" button above the content to switch between views
+5. Click the extension icon in the toolbar for settings
 
-## Supported Markdown Features
+## Supported markdown
 
-- **Headers** (H1-H6) with proper hierarchy
-- **Text Formatting**: Bold, italic, strikethrough
-- **Lists**: Ordered and unordered lists with nesting
-- **Links and Images**: Clickable links and embedded images
-- **Code**: Inline code and fenced code blocks
-- **Tables**: Full table support with styling
-- **Blockquotes**: Styled quote blocks
-- **Horizontal Rules**: Section dividers
+Parsing is done by [marked](https://github.com/markedjs/marked) v4.3.0 with GFM enabled:
+
+- Headers (H1–H6)
+- Text formatting: bold, italic, strikethrough
+- Ordered and unordered lists with nesting
+- Links and images
+- Inline code and fenced code blocks (styled, but not syntax-highlighted)
+- Tables
+- Blockquotes
+- Horizontal rules
 
 ## Settings
 
 Click the extension icon in your toolbar to access:
 
-- **Enable/Disable**: Toggle the extension on/off
-- **Theme Selection**: Choose between light and dark themes
-- **Status Information**: See if you're on a compatible Google Drive page
+- **Enable/Disable**: toggle the extension on/off (disabling restores the original raw view)
+- **Theme**: light or dark rendering theme
+- **Status**: whether you are on a Google Drive page
 
-## Technical Details
+## How it works
 
-- **Manifest Version**: 3 (latest Chrome extension standard)
-- **Permissions**: Only requires access to Google Drive pages
-- **Privacy**: No data collection - all processing happens locally
-- **Performance**: Optimized polling mechanism for responsive detection
-- **Compatibility**: Works with all Chromium-based browsers (Chrome, Edge, Brave, etc.)
-
-## Development
-
-This extension uses:
-- **Content Scripts**: Injected into Google Drive pages for file detection
-- **Marked.js**: Markdown parsing and HTML conversion
-- **CSS Styling**: GitHub-inspired markdown formatting
-- **Chrome Storage API**: User preferences and settings
+- A MutationObserver watches the page for Drive's preview element (`[role="document"]`) being added
+- The file name is extracted from the element's localized `aria-label` (en: `Displaying foo.md`, ja: `「foo.md」を表示しています`), so detection works on every UI language
+- The preview body is located structurally (the largest `<pre>` inside the preview element), because Drive's class names are obfuscated and rotate over time
+- The generated HTML is sanitized with [DOMPurify](https://github.com/cure53/DOMPurify) v3.2.6 before insertion
+- The content script runs in all frames (`all_frames: true`), so it keeps working if Drive hosts the preview in a same-origin iframe
 
 For development setup and architecture details, see [CLAUDE.md](CLAUDE.md).
 
-## Browser Compatibility
+## Permissions and privacy
 
-- ✅ Chrome 88+
-- ✅ Microsoft Edge 88+
-- ✅ Brave Browser
-- ✅ Other Chromium-based browsers
+- Host access is limited to `https://drive.google.com/*`
+- `storage` holds the two settings (enabled, theme); `activeTab` is used by the popup to show page status
+- No data is collected, stored elsewhere, or transmitted; marked and DOMPurify are bundled locally under `lib/`
 
-## Privacy & Security
+## Browser compatibility
 
-- **No Data Collection**: Extension doesn't collect, store, or transmit any personal data
-- **Local Processing**: All markdown rendering happens in your browser
-- **Minimal Permissions**: Only requests access to Google Drive pages
-- **Safe Rendering**: HTML output is properly sanitized
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Make your changes and test thoroughly
-4. Commit with clear messages: `git commit -m "Add feature description"`
-5. Push and create a pull request
+Any Chromium-based browser that supports Manifest V3 (Chrome 88+, Edge, Brave, Vivaldi, …). Developed and tested on Vivaldi.
 
 ## Troubleshooting
 
-**Extension not working?**
-- Make sure you're on `drive.google.com`
-- Try refreshing the Google Drive page
-- Check that the extension is enabled in `chrome://extensions/`
+**Nothing is rendered?**
 
-**Markdown not rendering?**
-- Ensure the file has a `.md` extension
-- Try double-clicking the file again
-- Check the extension popup for status information
+- Check that the extension is enabled, both in the popup and in `chrome://extensions/`
+- Reload the Google Drive tab
+- Disable any same-name extension installed from the Chrome Web Store
 
-**Performance issues?**
-- Disable other Chrome extensions temporarily to test
-- Clear browser cache and cookies for Google Drive
+**Debugging**
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+- Set `GDMD_DEBUG = true` at the top of `content.js`, reload the extension, and watch for `[GDMD]` logs in the DevTools console of the Drive tab
 
 ## Changelog
 
 ### Version 1.2.0
+
 - Locale-independent detection: works on non-English Google Drive UIs (e.g. Japanese `「foo.md」を表示しています`) by extracting the file name from the aria-label instead of matching the English word "Displaying"
 - Event-driven detection via MutationObserver (no more polling / fixed timeouts)
 - Structural content lookup (largest `<pre>` in the document element) instead of obfuscated class names
@@ -122,20 +96,19 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Popup theme setting now actually applies (dark theme via `.gdmd-dark` class)
 
 ### Version 1.1.0
+
 - Production-ready release
 - Optimized performance and polling mechanism
 - Enhanced multi-file support
 - Improved reliability and error handling
-- Clean, production-ready codebase
 
 ### Version 1.0.0
+
 - Initial release
 - Basic markdown detection and rendering
 - Toggle between raw and formatted views
 - Settings popup interface
 
----
+## License
 
-**Made with ❤️ for the markdown community**
-
-*Star this repository if you find it useful!*
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
